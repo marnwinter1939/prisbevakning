@@ -4,28 +4,27 @@ import json
 import os
 import re
 
-# --- ALLA DINA BUTIKER ---
 PRODUCTS = [
     {
-        "name": "Dior Sauvage EDP 60 ml",
+        "name": "dior sauvage edp 60 ml",
         "store": "KICKS",
         "url": "https://www.kicks.se/dior-sauvage-edp-60-ml",
         "target": 1000,
     },
     {
-        "name": "Dior Sauvage Parfum",
-        "store": "Åhléns",
+        "name": "dior sauvage parfum",
+        "store": "Ahlens",
         "url": "https://www.ahlens.se/produkter/skonhet/sauvage-parfum-22e37afa-d87a-44f2-a411-aae05b668215",
         "target": 1000,
     },
     {
-        "name": "Dior Sauvage EDP 60 ml",
+        "name": "dior sauvage edp 60 ml",
         "store": "Deloox",
-        "url": "https://www.deloox.se/produkt/1167425/【entity-dior¦canonical_name=Dior】-sauvage-eau-de-parfum-60-ml.html",
+        "url": "https://www.deloox.se/produkt/1167425/dior-sauvage-eau-de-parfum-60-ml.html",
         "target": 1000,
     },
     {
-        "name": "【entity-Dior¦canonical_name=Dior】 Sauvage EDP",
+        "name": "dior sauvage edp",
         "store": "Notino",
         "url": "https://www.notino.se/dior/sauvage-eau-de-parfum-for-man/p-15676582/",
         "target": 1000,
@@ -33,7 +32,6 @@ PRODUCTS = [
 ]
 
 STATE_FILE = "last_state.json"
-
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
@@ -46,8 +44,6 @@ def get_price(url):
     response = requests.get(url, headers=HEADERS, timeout=20)
     response.raise_for_status()
     soup = BeautifulSoup(response.text, "html.parser")
-
-    # 1. JSON-LD
     for script in soup.find_all("script", type="application/ld+json"):
         try:
             data = json.loads(script.string)
@@ -61,8 +57,6 @@ def get_price(url):
                         return float(offers[0]["price"])
         except:
             pass
-
-    # 2. Regex
     text = soup.get_text()
     matches = re.findall(r'(\d[\d\s]*)\s*kr', text)
     prices = []
@@ -78,13 +72,12 @@ def get_price(url):
     return None
 
 def send_telegram(product, price, last_price):
-    message = f"🎯 PRISALARM! {product['name']}\n\nButik: {product['store']}\nNu: {price:.0f} kr\nFörut: {last_price:.0f} kr\nMålpris: {product['target']} kr\n\nKöp här: {product['url']}"
+    message = f"PRISALARM! {product['name']}\n\nButik: {product['store']}\nNu: {price:.0f} kr\nForut: {last_price:.0f} kr\nMalpris: {product['target']} kr\n\nKop har: {product['url']}"
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     r = requests.post(url, json={"chat_id": TELEGRAM_CHAT_ID, "text": message}, timeout=15)
-    print(f"Telegram skickat för {product['store']}: {r.status_code}")
+    print(f"Telegram skickat for {product['store']}: {r.status_code}")
 
 def check():
-    # Läs gammalt tillstånd
     state = {}
     if os.path.exists(STATE_FILE):
         try:
@@ -92,7 +85,6 @@ def check():
                 state = json.load(f)
         except:
             pass
-
     for product in PRODUCTS:
         key = product["store"]
         print(f"\n--- Kollar {product['store']} ---")
@@ -101,30 +93,24 @@ def check():
         except Exception as e:
             print(f"Fel hos {product['store']}: {e}")
             continue
-
         if price is None:
             print(f"Hittade inte priset hos {product['store']}")
             continue
-
-        print(f"{product['store']}: {price:.0f} kr (mål: {product['target']} kr)")
-
+        print(f"{product['store']}: {price:.0f} kr (mal: {product['target']} kr)")
         prev = state.get(key, {})
         last_notified = prev.get("notified", False)
         last_price = prev.get("price")
-
         if price < product["target"]:
             if not last_notified:
-                print(f"Målpris nått hos {product['store']}! Skickar...")
+                print(f"Malpris natt hos {product['store']}! Skickar...")
                 send_telegram(product, price, last_price if last_price else price)
                 state[key] = {"price": price, "notified": True}
             else:
-                print(f"Redan skickat för {product['store']}, hoppar över.")
+                print(f"Redan skickat for {product['store']}, hoppar over.")
                 state[key] = {"price": price, "notified": True}
         else:
-            print(f"Fortfarande över målpris hos {product['store']}")
+            print(f"Fortfarande over malpris hos {product['store']}")
             state[key] = {"price": price, "notified": False}
-
-    # Spara
     with open(STATE_FILE, "w") as f:
         json.dump(state, f)
 
