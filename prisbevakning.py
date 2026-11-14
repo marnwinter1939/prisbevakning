@@ -6,6 +6,7 @@ import re
 
 URL = "https://www.kicks.se/dior-sauvage-edp-60-ml"
 TARGET_PRICE = 1199
+STATE_FILE = "last_state.json"  # Sparas i cache
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
@@ -56,11 +57,35 @@ def check():
         print("Hittade inte priset")
         return
     print(f"Nuvarande pris: {price:.0f} kr")
+
+    # Läs förra tillståndet
+    last_notified = False
+    last_price = None
+    if os.path.exists(STATE_FILE):
+        try:
+            with open(STATE_FILE) as f:
+                state = json.load(f)
+                last_notified = state.get("notified", False)
+                last_price = state.get("price")
+        except:
+            pass
+
     if price < TARGET_PRICE:
-        print("Målpris nått! Skickar Telegram...")
-        send_telegram(price, price)
+        if not last_notified:
+            print("Målpris nått FÖRSTA gången! Skickar Telegram...")
+            send_telegram(price, last_price if last_price else price)
+            # Spara att vi har skickat
+            with open(STATE_FILE, "w") as f:
+                json.dump({"price": price, "notified": True}, f)
+        else:
+            print(f"Redan skickat om detta pris ({price:.0f} kr), skickar inte igen.")
+            with open(STATE_FILE, "w") as f:
+                json.dump({"price": price, "notified": True}, f)
     else:
-        print(f"Fortfarande över målpris ({TARGET_PRICE} kr)")
+        print(f"Fortfarande över målpris ({TARGET_PRICE} kr), nollställer notis.")
+        # Priset har gått upp igen, så nästa gång det sjunker ska vi skicka igen
+        with open(STATE_FILE, "w") as f:
+            json.dump({"price": price, "notified": False}, f)
 
 if __name__ == "__main__":
     check()
