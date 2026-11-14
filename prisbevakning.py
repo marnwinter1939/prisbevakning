@@ -6,28 +6,29 @@ import re
 
 PRODUCTS = [
     {
-        "name": "dior sauvage edp 60 ml",
+        "name": "【entity-dior¦canonical_name=Dior】 sauvage edp 60 ml",
         "store": "KICKS",
         "url": "https://www.kicks.se/dior-sauvage-edp-60-ml",
         "target": 1000,
     },
     {
-        "name": "dior sauvage parfum",
-        "store": "Ahlens",
-        "url": "https://www.ahlens.se/produkter/skonhet/sauvage-parfum-22e37afa-d87a-44f2-a411-aae05b668215",
-        "target": 1000,
-    },
-    {
-        "name": "dior sauvage edp 60 ml",
+        "name": "【entity-dior¦canonical_name=Dior】 sauvage edp 60 ml",
         "store": "Deloox",
         "url": "https://www.deloox.se/produkt/1167425/dior-sauvage-eau-de-parfum-60-ml.html",
         "target": 1000,
     },
     {
-        "name": "dior sauvage edp",
+        "name": "【entity-dior¦canonical_name=Dior】 sauvage edp",
         "store": "Notino",
         "url": "https://www.notino.se/dior/sauvage-eau-de-parfum-for-man/p-15676582/",
         "target": 1000,
+    },
+    {
+        "name": "【entity-dior¦canonical_name=Dior】 sauvage parfum 60 ml",
+        "store": "Ahlens",
+        "url": "https://www.ahlens.se/produkter/skonhet/sauvage-parfum-22e37afa-d87a-44f2-a411-aae05b668215",
+        "target": 1000,
+        "special": "ahlens",
     },
 ]
 
@@ -40,7 +41,50 @@ HEADERS = {
     "Accept-Language": "sv-SE,sv;q=0.9,en;q=0.8",
 }
 
-def get_price(url):
+def get_price_ahlens(url):
+    # Special for Ahlens: leta i NEXT_DATA efter variant 60 ml
+    response = requests.get(url, headers=HEADERS, timeout=20)
+    response.raise_for_status()
+    html = response.text
+    soup = BeautifulSoup(html, "html.parser")
+    # 1. Forsok hitta NEXT_DATA
+    for script in soup.find_all("script", id="__NEXT_DATA__"):
+        try:
+            data = json.loads(script.string)
+            text = json.dumps(data)
+            # Leta efter priser nara "60"
+            # Detta ar en forenklad version - vi loggar allt for felsokning
+            print(f"Ahlens NEXT_DATA hittad, langd: {len(text)}")
+            # Forsok hitta alla priser i NEXT_DATA
+            prices = re.findall(r'"price":\s*(\d+)', text)
+            print(f"Ahlens priser i data: {prices[:10]}")
+            if prices:
+                # Ta det hogsta rimliga priset for 60 ml parfum (bor vara 1200-1800)
+                # 30 ml ar billigare, sa vi filtrerar bort priser under 1000 for Ahlens Parfum
+                valid = [float(p) for p in prices if 1000 < float(p) < 3000]
+                if valid:
+                    return min(valid)
+        except Exception as e:
+            print(f"Ahlens NEXT_DATA fel: {e}")
+    # 2. Fallback: vanlig regex men filtrera bort billiga 30ml priser
+    text = soup.get_text()
+    matches = re.findall(r'(\d[\d\s]*)\s*kr', text)
+    prices = []
+    for m in matches:
+        try:
+            p = float(m.replace(" ", "").replace("\xa0", ""))
+            if 1000 < p < 3000:
+                prices.append(p)
+        except:
+            pass
+    if prices:
+        print(f"Ahlens fallback priser: {prices[:5]}")
+        return min(prices)
+    return None
+
+def get_price(url, product=None):
+    if product and product.get("special") == "ahlens":
+        return get_price_ahlens(url)
     response = requests.get(url, headers=HEADERS, timeout=20)
     response.raise_for_status()
     soup = BeautifulSoup(response.text, "html.parser")
@@ -89,7 +133,7 @@ def check():
         key = product["store"]
         print(f"\n--- Kollar {product['store']} ---")
         try:
-            price = get_price(product["url"])
+            price = get_price(product["url"], product)
         except Exception as e:
             print(f"Fel hos {product['store']}: {e}")
             continue
