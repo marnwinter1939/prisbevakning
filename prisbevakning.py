@@ -9,7 +9,7 @@ PRODUCTS = [
         "name": "【entity-dior¦canonical_name=Dior】 sauvage edp 60 ml",
         "store": "KICKS",
         "url": "https://www.kicks.se/dior-sauvage-edp-60-ml",
-        "target": 1000,
+        "target": 800,
     },
     {
         "name": "【entity-dior¦canonical_name=Dior】 sauvage edp 60 ml",
@@ -24,7 +24,7 @@ PRODUCTS = [
         "target": 1000,
     },
     {
-        "name": "【entity-dior¦canonical_name=Dior】 sauvage parfum 60 ml",
+        "name": "【entity-dior¦canonical_name=Dior】 sauvage edp 60 ml",
         "store": "Ahlens",
         "url": "https://www.ahlens.se/produkter/skonhet/sauvage-parfum-22e37afa-d87a-44f2-a411-aae05b668215",
         "target": 1000,
