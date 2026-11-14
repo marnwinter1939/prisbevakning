@@ -23,13 +23,7 @@ PRODUCTS = [
         "url": "https://www.notino.se/dior/sauvage-eau-de-parfum-for-man/p-15676582/",
         "target": 1000,
     },
-    {
-        "name": "【entity-dior¦canonical_name=Dior】 sauvage edp 60 ml",
-        "store": "Ahlens",
-        "url": "https://www.ahlens.se/produkter/skonhet/sauvage-parfum-22e37afa-d87a-44f2-a411-aae05b668215",
-        "target": 1000,
-        "special": "ahlens",
-    },
+  
 ]
 
 STATE_FILE = "last_state.json"
